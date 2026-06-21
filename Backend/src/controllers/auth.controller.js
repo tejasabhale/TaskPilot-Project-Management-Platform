@@ -171,4 +171,19 @@ const login = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, verifyOtp, login };
+const logout = asyncHandler(async(req, res)=>{
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: { refreshToken: 1}
+    },
+    {
+      new: true
+    }
+  )
+  return res.status(200).json(
+    new ApiResponse(200, {}, "User logged out.")
+  )
+})
+
+export { register, verifyOtp, login, logout };
