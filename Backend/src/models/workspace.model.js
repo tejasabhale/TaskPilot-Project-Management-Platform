@@ -6,17 +6,20 @@ const workspaceSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: 3
     },
     description: {
       type: String,
       default: "",
+      minlength: 5,
+      trim: true
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    member: [
+    members: [
       {
         user: {
           type: mongoose.Schema.Types.ObjectId,
@@ -24,7 +27,7 @@ const workspaceSchema = new mongoose.Schema(
         },
         role: {
           type: String,
-          enum: ["user", "member", "admin"],
+          enum: ["owner", "member", "admin"],
           default: "member",
         },
       },
