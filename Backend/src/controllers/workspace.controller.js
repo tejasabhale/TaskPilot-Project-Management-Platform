@@ -5,12 +5,20 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const createWorkspace = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
-  if (!name || !description) {
-    throw new ApiError(400, "Name and Description is required.");
+  if ([name, description].some((field) => field?.trim() === "")) {
+    throw new ApiError(400, "Name and Description are required.");
+  }
+  const exists = await Workspace.findOne({
+    owner: req.user._id,
+    name,
+  });
+
+  if (exists) {
+    throw new ApiError(409, "Workspace already exists");
   }
   const workspace = await Workspace.create({
-    name,
-    description,
+    name: name.trim(),
+    description: description.trim(),
     owner: req.user._id,
     members: [
       {
@@ -25,7 +33,9 @@ const createWorkspace = asyncHandler(async (req, res) => {
 });
 
 const getWorkspaces = asyncHandler(async (req, res) => {
-  const workspaces = await Workspace.find({ "members.user": req.user._id });
+  const workspaces = await Workspace.find({ "members.user": req.user._id })
+    .populate("owner", "fullName  avatar")
+    .sort({ createdAt: -1 });
 
   return res
     .status(200)
@@ -55,8 +65,24 @@ const getWorkspaceById = asyncHandler(async (req, res) => {
 const updateWorkspace = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
   const { workspaceId } = req.params;
-  if (!name && !description) {
-    throw new ApiError(400, "At least one field is required!");
+  if (name !== undefined && !name.trim()) {
+  throw new ApiError(400, "Name is required");
+}
+
+if (description !== undefined && !description.trim()) {
+  throw new ApiError(400, "Description is required");
+}
+
+  if (name) {
+    const exists = await Workspace.findOne({
+      owner: req.user._id,
+      name,
+      _id: { $ne: workspaceId },
+    });
+
+    if (exists) {
+      throw new ApiError(409, "Workspace already exists");
+    }
   }
 
   const workspace = await Workspace.findById(workspaceId);
@@ -65,21 +91,21 @@ const updateWorkspace = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No workspace found");
   }
 
-  const isOwner = workspace.owner.toString() === req.user._id.toString();
+  const member = workspace.members.find(
+    (m) => m.user.toString() === req.user._id.toString(),
+  );
 
-  if (!isOwner) {
-    throw new ApiError(403, "Only owner can update workspace");
+  if (!member || !["admin", "owner"].includes(member.role)) {
+    throw new ApiError(403, "Access denied");
   }
 
-  if (name) workspace.name = name;
-  if (description) workspace.description = description;
+  if (name) workspace.name = name.trim();
+  if (description) workspace.description = description.trim();
   await workspace.save();
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, { workspace }, "Workspace updated successfully."),
-    );
+    .json(new ApiResponse(200, workspace, "Workspace updated successfully."));
 });
 
 const deleteWorkspace = asyncHandler(async (req, res) => {
