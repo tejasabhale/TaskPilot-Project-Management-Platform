@@ -216,6 +216,64 @@ const addWorkspaceMembers = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, addedMember, "Member added successfully."));
 });
 
+const removeWorkspaceMember = asyncHandler(async (req, res) => {
+  const { workspaceId, memberId } = req.params;
+  const workspace = await Workspace.findById(workspaceId);
+
+  if (!workspace) {
+    throw new ApiError(404, "No workspace found.");
+  }
+
+  const currentMember = workspace.members.find(
+    (m) => m.user.toString() === req.user._id.toString(),
+  );
+
+  if (!currentMember) {
+    throw new ApiError(403, "Access denied.");
+  }
+
+  const targetMember = workspace.members.find(
+    (m) => m.user.toString() === memberId,
+  );
+
+  if (!targetMember) {
+    throw new ApiError(404, "Member not found.");
+  }
+
+  if (req.user._id.toString() === memberId) {
+    throw new ApiError(400, "Use the leave workspace endpoint instead.");
+  }
+
+  const permissions = {
+    owner: ["admin", "member"],
+    admin: ["member"],
+    member: [],
+  };
+
+  if (!permissions[currentMember.role].includes(targetMember.role)) {
+    throw new ApiError(
+      403,
+      `${currentMember.role} cannot remove ${targetMember.role}`,
+    );
+  }
+
+  const updatedWorkspace = await Workspace.findByIdAndUpdate(
+    workspaceId,
+    {
+      $pull: {
+        members: {
+          user: memberId,
+        },
+      },
+    },
+    { new: true },
+  ).populate("members.user", "fullName email avatar")
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedWorkspace, "Member removed successfully."));
+});
+
 export {
   createWorkspace,
   getWorkspaces,
@@ -224,4 +282,5 @@ export {
   deleteWorkspace,
   getWorkspaceMembers,
   addWorkspaceMembers,
+  removeWorkspaceMember,
 };
