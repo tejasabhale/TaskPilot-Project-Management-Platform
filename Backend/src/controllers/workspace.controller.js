@@ -1,3 +1,4 @@
+import { Task } from "../models/task.model.js";
 import { User } from "../models/user.model.js";
 import { Workspace } from "../models/workspace.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -11,7 +12,7 @@ const createWorkspace = asyncHandler(async (req, res) => {
   }
   const exists = await Workspace.findOne({
     owner: req.user._id,
-    name,
+    name: name.trim(),
   });
 
   if (exists) {
@@ -34,8 +35,10 @@ const createWorkspace = asyncHandler(async (req, res) => {
 });
 
 const getWorkspaces = asyncHandler(async (req, res) => {
-  const workspaces = await Workspace.find({ "members.user": req.user._id })
-    .populate("owner", "fullName  avatar")
+  const workspaces = await Workspace.find({
+    $or: [{ owner: req.user._id }, { "members.user": req.user._id }],
+  })
+    .populate("owner", "fullName email avatar")
     .sort({ createdAt: -1 });
 
   return res
@@ -53,7 +56,7 @@ const getWorkspaceById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Workspace not found");
   }
   const isMember = workspace.members.some(
-    (m) => m.user._id.toString() === req.user._id.toString(),
+    (m) => m.user?._id.toString() === req.user._id.toString(),
   );
   if (!isMember) {
     throw new ApiError(403, "Access denied");
@@ -209,11 +212,9 @@ const addWorkspaceMembers = asyncHandler(async (req, res) => {
 
   await workspace.populate("members.user", "fullName email avatar");
 
-  const addedMember = workspace.members[workspace.members.length - 1];
-
   return res
     .status(201)
-    .json(new ApiResponse(201, addedMember, "Member added successfully."));
+    .json(new ApiResponse(201, workspace, "Member added successfully."));
 });
 
 const removeWorkspaceMember = asyncHandler(async (req, res) => {
@@ -293,7 +294,7 @@ const leaveWorkspace = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not workspace member!");
   }
   if (member.role === "owner") {
-    throw new ApiError(404, "Owner cannot leave workspace.");
+    throw new ApiError(403, "Owner cannot leave workspace.");
   }
   const updatedWorkspace = await Workspace.findByIdAndUpdate(
     workspaceId,
@@ -301,21 +302,27 @@ const leaveWorkspace = asyncHandler(async (req, res) => {
       $pull: {
         members: {
           user: member.user,
-          role: member.role,
         },
       },
     },
     { new: true },
-  );
+  ).populate("members.user", "fullName email avatar");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, updatedWorkspace, "Leaved successfully."));
+    .json(
+      new ApiResponse(200, updatedWorkspace, "Left workspace successfully."),
+    );
 });
 
 const updateMemberRole = asyncHandler(async (req, res) => {
   const { workspaceId, memberId } = req.params;
   const { role } = req.body;
+
+  if (!["admin", "member"].includes(role)) {
+    throw new ApiError(400, "Invalid role");
+  }
+
   const workspace = await Workspace.findById(workspaceId);
 
   if (!workspace) {
@@ -340,38 +347,80 @@ const updateMemberRole = asyncHandler(async (req, res) => {
 
   const permissions = {
     owner: ["admin", "member"],
-    admin: ["member"],
+    admin: [],
     member: [],
   };
 
-  if (!permissions[currentMember.role].includes(targetMember.role)) {
-    throw new ApiError(404, "Access denied!");
+  if (req.user._id.toString() === memberId) {
+    throw new ApiError(400, "You cannot change your own role.");
   }
 
-  const updatedWorkspace = await Workspace.findByIdAndUpdate(
-    workspaceId,
-    {
-      $set: {
-        members: {
-          user: targetMember,
-          role,
-        },
-      },
-    },
-    {
-      new: true,
-    },
-  );
+  if (targetMember.role === "owner") {
+    throw new ApiError(403, "Owner cannot be changed.");
+  }
+
+  if (targetMember.role === role) {
+    throw new ApiError(400, "Member already has this role.");
+  }
+
+  if (!permissions[currentMember.role].includes(targetMember.role)) {
+    throw new ApiError(
+      403,
+      `${currentMember.role} cannot change ${targetMember.role}`,
+    );
+  }
+
+  targetMember.role = role;
+  await workspace.save();
+  await workspace.populate("members.user", "fullName email avatar");
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        updatedWorkspace,
-        "Member role updated successfully!",
-      ),
-    );
+    .json(new ApiResponse(200, workspace, "Member role updated successfully!"));
+});
+
+const getWorkspaceStats = asyncHandler(async (req, res) => {
+  const { workspaceId } = req.params;
+
+  const workspace = await Workspace.findById(workspaceId);
+
+  if (!workspace) {
+    throw new ApiError(404, "Workspace not found.");
+  }
+
+  const isMember = workspace.members.some(
+    (member) => member.user.toString() === req.user._id.toString(),
+  );
+
+  if (!isMember) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  const totalMembers = workspace.members.length;
+
+  const admins = workspace.members.filter((m) => m.role === "admin").length;
+
+  const members = workspace.members.filter((m) => m.role === "member").length;
+
+  const tasks = await Task.countDocuments({
+    workspace: workspaceId,
+  });
+
+  const completedTasks = await Task.countDocuments({
+    workspace: workspaceId,
+    status: "Completed",
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      totalMembers,
+      members,
+      admins,
+      members,
+      tasks,
+      completedTasks,
+    }),
+  );
 });
 
 export {
@@ -385,4 +434,5 @@ export {
   removeWorkspaceMember,
   leaveWorkspace,
   updateMemberRole,
+  getWorkspaceStats,
 };

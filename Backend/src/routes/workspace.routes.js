@@ -6,6 +6,7 @@ import {
   getWorkspaceById,
   getWorkspaceMembers,
   getWorkspaces,
+  getWorkspaceStats,
   leaveWorkspace,
   removeWorkspaceMember,
   updateMemberRole,
@@ -36,7 +37,7 @@ router.post(
   "/:workspaceId/update-member-role/:memberId",
   verifyJWT,
   validateObjectId("workspaceId", "memberId"),
-  updateMemberRole
+  updateMemberRole,
 );
 
 router.get("/", verifyJWT, getWorkspaces);
@@ -53,6 +54,13 @@ router.get(
   verifyJWT,
   validateObjectId("workspaceId"),
   getWorkspaceMembers,
+);
+
+router.get(
+  "/:workspaceId/stats",
+  verifyJWT,
+  validateObjectId("workspaceId"),
+  getWorkspaceStats,
 );
 
 router.patch(

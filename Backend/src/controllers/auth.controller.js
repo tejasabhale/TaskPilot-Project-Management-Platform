@@ -170,7 +170,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
       $set: { isVerified: true },
     },
     {
-      new: true,
+      returnDocument: "after",
     },
   );
 
