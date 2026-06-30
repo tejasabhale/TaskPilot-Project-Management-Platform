@@ -12,6 +12,6 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/workspace", workspaceRouter);
-app.use("api/v1/project", projectRouter);
+app.use("/api/v1/project", projectRouter);
 
 export { app };

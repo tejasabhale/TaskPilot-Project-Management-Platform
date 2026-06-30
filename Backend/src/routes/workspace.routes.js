@@ -14,6 +14,7 @@ import {
 } from "../controllers/workspace.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validateObjectId } from "../middlewares/validateObjectId.middleware.js";
+import { createProject, getAllProjects } from "../controllers/project.controller.js";
 
 const router = Router();
 
@@ -82,6 +83,20 @@ router.delete(
   verifyJWT,
   validateObjectId("workspaceId", "memberId"),
   removeWorkspaceMember,
+);
+
+router.get(
+  "/:workspaceId/projects",
+  verifyJWT,
+  validateObjectId("workspaceId"),
+  getAllProjects
+);
+
+router.post(
+  "/:workspaceId/projects",
+  verifyJWT,
+  validateObjectId("workspaceId"),
+  createProject,
 );
 
 export default router;

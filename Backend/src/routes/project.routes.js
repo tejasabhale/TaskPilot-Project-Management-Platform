@@ -1,15 +1,41 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validateObjectId } from "../middlewares/validateObjectId.middleware.js";
-import { createProject } from "../controllers/project.controller.js";
+import {
+  deleteProject,
+  getProjectById,
+  getProjectStats,
+  updateProject,
+} from "../controllers/project.controller.js";
 
 const router = Router();
 
-router.post(
-  "/workspace/:workspaceId",
+router.get(
+  "/:projectId",
   verifyJWT,
-  validateObjectId("workspaceID"),
-  createProject,
+  validateObjectId("projectId"),
+  getProjectById,
 );
 
-export default router;  
+router.patch(
+  "/:projectId",
+  verifyJWT,
+  validateObjectId("projectId"),
+  updateProject,
+);
+
+router.delete(
+  "/:projectId",
+  verifyJWT,
+  validateObjectId("projectId"),
+  deleteProject,
+);
+
+router.get(
+  "/:projectId/getStats",
+  verifyJWT,
+  validateObjectId("projectId"),
+  getProjectStats,
+);
+
+export default router;

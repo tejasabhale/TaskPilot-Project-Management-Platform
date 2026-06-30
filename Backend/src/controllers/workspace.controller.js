@@ -412,14 +412,18 @@ const getWorkspaceStats = asyncHandler(async (req, res) => {
   });
 
   return res.status(200).json(
-    new ApiResponse(200, {
-      totalMembers,
-      members,
-      admins,
-      members,
-      tasks,
-      completedTasks,
-    }),
+    new ApiResponse(
+      200,
+      {
+        totalMembers,
+        members,
+        admins,
+        members,
+        tasks,
+        completedTasks,
+      },
+      "Workspace stats fetched successfully.",
+    ),
   );
 });
 
