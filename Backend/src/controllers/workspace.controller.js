@@ -418,7 +418,6 @@ const getWorkspaceStats = asyncHandler(async (req, res) => {
         totalMembers,
         members,
         admins,
-        members,
         tasks,
         completedTasks,
       },

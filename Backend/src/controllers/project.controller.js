@@ -82,7 +82,8 @@ const getAllProjects = asyncHandler(async (req, res) => {
     workspace: workspaceId,
   })
     .populate("createdBy", "fullName email avatar")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   return res
     .status(200)
@@ -91,10 +92,12 @@ const getAllProjects = asyncHandler(async (req, res) => {
 
 const getProjectById = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  const project = await Project.findById(projectId).populate([
-    { path: "workspace", select: "members" },
-    { path: "createdBy", select: "fullName email avatar" },
-  ]);
+  const project = await Project.findById(projectId)
+    .populate([
+      { path: "workspace", select: "members" },
+      { path: "createdBy", select: "fullName email avatar" },
+    ])
+    .lean();
   if (!project) {
     throw new ApiError(404, "Project not found.");
   }
@@ -181,10 +184,12 @@ const updateProject = asyncHandler(async (req, res) => {
 
   await project.save();
 
-  const updatedProject = await Project.findById(project._id).populate([
-    { path: "workspace", select: "name" },
-    { path: "createdBy", select: "fullName email avatar" },
-  ]);
+  const updatedProject = await Project.findById(project._id)
+    .populate([
+      { path: "workspace", select: "name" },
+      { path: "createdBy", select: "fullName email avatar" },
+    ])
+    .lean();
 
   return res
     .status(200)
@@ -225,10 +230,9 @@ const deleteProject = asyncHandler(async (req, res) => {
 
 const getProjectStats = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  const project = await Project.findById(projectId).populate(
-    "workspace",
-    "members",
-  );
+  const project = await Project.findById(projectId)
+    .populate("workspace", "members")
+    .lean();
   if (!project) {
     throw new ApiError(404, "Project not found.");
   }
@@ -251,7 +255,7 @@ const getProjectStats = asyncHandler(async (req, res) => {
       Task.countDocuments({
         project: projectId,
         dueDate: { $lt: new Date() },
-        status: { $ne: "Completed" },
+        status: { $ne: "completed" },
       }),
     ]);
 
@@ -270,7 +274,7 @@ const getProjectStats = asyncHandler(async (req, res) => {
         overdue,
         completionPercentage,
       },
-      "",
+      "Project statistics fetched successfully.",
     ),
   );
 });
@@ -281,5 +285,5 @@ export {
   getProjectById,
   updateProject,
   deleteProject,
-  getProjectStats
+  getProjectStats,
 };

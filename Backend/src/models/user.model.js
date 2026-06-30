@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
       minlength: 3,
       maxlength: 30,
     },
@@ -29,6 +30,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true,
       lowercase: true,
       trim: true,
       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please use a valid email"],
@@ -43,6 +45,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true,
       trim: true,
       match: [/^\d{10}$/, "Please enter a valid 10 digit mobile number"],
     },
@@ -66,6 +69,8 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;

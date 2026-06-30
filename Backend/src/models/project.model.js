@@ -45,4 +45,7 @@ const projectSchema = new Schema(
   },
 );
 
+projectSchema.index({ workspace: 1 });
+projectSchema.index({ workspace: 1, name: 1 }, { unique: true });
+
 export const Project = mongoose.model("Project", projectSchema);

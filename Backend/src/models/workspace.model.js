@@ -38,4 +38,6 @@ const workspaceSchema = new mongoose.Schema(
   },
 );
 
+workspaceSchema.index({ "members.user": 1 });
+
 export const Workspace = mongoose.model("Workspace", workspaceSchema);

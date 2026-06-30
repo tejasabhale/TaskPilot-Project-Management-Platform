@@ -32,5 +32,6 @@ const otpSchema = new mongoose.Schema(
 );
 
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+otpSchema.index({ email: 1, action: 1 });
 
 export const Otp = mongoose.model("Otp", otpSchema);

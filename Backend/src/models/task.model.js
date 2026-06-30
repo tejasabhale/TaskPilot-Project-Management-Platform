@@ -32,14 +32,14 @@ const taskSchema = new Schema(
 
     status: {
       type: String,
-      enum: ["Todo", "In Progress", "Review", "Completed"],
-      default: "Todo",
+      enum: ["todo", "inProgress", "review", "completed"],
+      default: "todo",
     },
 
     priority: {
       type: String,
-      enum: ["Low", "Medium", "High"],
-      default: "Medium",
+      enum: ["low", "medium", "high"],
+      default: "medium",
     },
 
     dueDate: {
@@ -49,6 +49,7 @@ const taskSchema = new Schema(
     project: {
       type: Schema.Types.ObjectId,
       ref: "Project",
+      required: true,
     },
 
     attachments: [
@@ -71,5 +72,13 @@ const taskSchema = new Schema(
     timestamps: true,
   },
 );
+taskSchema.index({ project: 1 });
+taskSchema.index({ assignedTo: 1 });
+
+taskSchema.index({ project: 1, status: 1 });
+taskSchema.index({ project: 1, dueDate: 1 });
+taskSchema.index({ assignedTo: 1, status: 1 });
+taskSchema.index({ workspace: 1, assignedTo: 1 });
+taskSchema.index({ workspace: 1, project: 1 });
 
 export const Task = mongoose.model("Task", taskSchema);
