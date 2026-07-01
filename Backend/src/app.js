@@ -3,7 +3,7 @@ import authRouter from "./routes/auth.routes.js";
 import cookieParser from "cookie-parser";
 import workspaceRouter from "./routes/workspace.routes.js";
 import projectRouter from "./routes/project.routes.js";
-import taskRouter from "./routes/task.router.js"
+import taskRouter from "./routes/task.routes.js"
 
 const app = express();
 

@@ -85,6 +85,8 @@ router.delete(
   removeWorkspaceMember,
 );
 
+// Project Routes
+
 router.get(
   "/:workspaceId/projects",
   verifyJWT,

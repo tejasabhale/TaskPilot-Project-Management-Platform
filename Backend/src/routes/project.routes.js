@@ -7,6 +7,7 @@ import {
   getProjectStats,
   updateProject,
 } from "../controllers/project.controller.js";
+import { createTask, getAllTasks } from "../controllers/task.controller.js";
 
 const router = Router();
 
@@ -36,6 +37,22 @@ router.get(
   verifyJWT,
   validateObjectId("projectId"),
   getProjectStats,
+);
+
+// Task Routes
+
+router.post(
+  "/:projectId/tasks",
+  verifyJWT,
+  validateObjectId("projectId"),
+  createTask,
+);
+
+router.get(
+  "/:projectId/tasks",
+  verifyJWT,
+  validateObjectId("projectId"),
+  getAllTasks,
 );
 
 export default router;
